@@ -52,16 +52,39 @@ Write-Host "   Encontrados $TotalMods mod(s)." -ForegroundColor Green
 
 Write-Host "[3/4] Descargando mods..." -ForegroundColor Yellow
 $Contador = 0
+
+# Crear lista de archivos exitosos y fallidos
+$Descargados = @()
+$Fallidos = @()
+
 foreach ($Mod in $Mods) {
     $Contador++
     $Porcentaje = [math]::Round(($Contador / $TotalMods) * 100)
     $NombreArchivo = $Mod.name
     $RutaDestino = Join-Path $RutaModsLocal $NombreArchivo
     
+    # Mostrar barra de progreso
     Write-Progress -Activity "Descargando mods..." -Status "$NombreArchivo" -PercentComplete $Porcentaje -CurrentOperation "Mod $Contador de $TotalMods"
     
-    Invoke-WebRequest -Uri $Mod.download_url -OutFile $RutaDestino -UseBasicParsing
-    Write-Host "    [$Contador/$TotalMods] $NombreArchivo" -ForegroundColor Gray
+    # Método robusto de descarga con manejo de errores
+    try {
+        # Método 1: Invoke-WebRequest
+        Invoke-WebRequest -Uri $Mod.download_url -OutFile $RutaDestino -UseBasicParsing -ErrorAction Stop
+        $Descargados += $NombreArchivo
+        Write-Host "    [$Contador/$TotalMods] ✓ $NombreArchivo" -ForegroundColor Green
+    } catch {
+        # Método 2: WebClient (alternativo)
+        try {
+            $WebClient = New-Object System.Net.WebClient
+            $WebClient.DownloadFile($Mod.download_url, $RutaDestino)
+            $Descargados += $NombreArchivo
+            Write-Host "    [$Contador/$TotalMods] ✓ $NombreArchivo (método alternativo)" -ForegroundColor Green
+        } catch {
+            $Fallidos += $NombreArchivo
+            Write-Host "    [$Contador/$TotalMods] ✗ Error con: $NombreArchivo" -ForegroundColor Red
+            Write-Host "       Motivo: $($_.Exception.Message)" -ForegroundColor DarkRed
+        }
+    }
 }
 Write-Progress -Activity "Descargando mods..." -Completed
 
@@ -70,8 +93,18 @@ Write-Host ""
 Write-Host "=====================================================" -ForegroundColor Green
 Write-Host "   ¡DESCARGA COMPLETADA!" -ForegroundColor Green
 Write-Host "=====================================================" -ForegroundColor Green
-Write-Host "   Mods instalados: $TotalMods" -ForegroundColor White
+Write-Host "   Mods instalados: $($Descargados.Count)/$TotalMods" -ForegroundColor White
 Write-Host "   Ubicacion: $RutaModsLocal" -ForegroundColor White
+
+if ($Fallidos.Count -gt 0) {
+    Write-Host ""
+    Write-Host "   ⚠ Algunos mods fallaron:" -ForegroundColor Yellow
+    foreach ($fallo in $Fallidos) {
+        Write-Host "      - $fallo" -ForegroundColor Yellow
+    }
+    Write-Host "   Puedes intentar descargarlos manualmente." -ForegroundColor Yellow
+}
+
 Write-Host ""
 Write-Host "   Abre Minecraft y ¡a jugar!" -ForegroundColor Cyan
 Write-Host "=====================================================" -ForegroundColor Green
