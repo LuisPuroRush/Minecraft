@@ -8,7 +8,7 @@ $NombreRepo    = "Minecraft"
 
 # Rutas locales
 $RutaModsLocal = "$env:APPDATA\.minecraft\mods"
-$RutaForgeLocal = "$env:TEMP\forge-installer.jar"
+$RutaForgeDescarga = "$env:USERPROFILE\Downloads\forge-installer.jar"
 
 # =========================================
 Clear-Host
@@ -58,8 +58,9 @@ function Descargar-Mods {
         Write-Host "   ERROR: No se pudo acceder a la carpeta 'mods'." -ForegroundColor Red
         Write-Host "   Asegurate de que existe una carpeta 'mods' en tu GitHub." -ForegroundColor Yellow
         Write-Host ""
-        pause
-        return
+        Write-Host "   Presiona cualquier tecla para salir..." -ForegroundColor Gray
+        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        exit
     }
 
     $Mods = $ContenidoCarpeta | Where-Object { $_.type -eq "file" -and $_.name -like "*.jar" }
@@ -67,8 +68,9 @@ function Descargar-Mods {
     
     if ($TotalMods -eq 0) {
         Write-Host "   No se encontraron mods en la carpeta." -ForegroundColor Red
-        pause
-        return
+        Write-Host "   Presiona cualquier tecla para salir..." -ForegroundColor Gray
+        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        exit
     }
     
     Write-Host "   Encontrados $TotalMods mod(s)." -ForegroundColor Green
@@ -121,103 +123,107 @@ function Descargar-Mods {
         }
     }
     Write-Host ""
-    pause
+    Write-Host "   Presiona cualquier tecla para salir..." -ForegroundColor Gray
+    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    exit
 }
 
 # =========================================
-# FUNCIÓN PARA INSTALAR FORGE
+# FUNCIÓN PARA DESCARGAR FORGE
 # =========================================
-function Instalar-Forge {
+function Descargar-Forge {
     Write-Host ""
     Write-Host "=====================================================" -ForegroundColor Magenta
-    Write-Host "   INSTALADOR DE FORGE 1.20.1 (SOLO PREMIUM)" -ForegroundColor Magenta
+Write-Host "   DESCARGAR FORGE 1.20.1 MINECRAFT (SOLO PREMIUM)" -ForegroundColor Magenta
     Write-Host "=====================================================" -ForegroundColor Magenta
     Write-Host ""
     Write-Host "   Importante: Solo para Minecraft Premium" -ForegroundColor Yellow
     Write-Host "   Usuarios de TLauncher NO necesitan esto" -ForegroundColor Yellow
+    Write-Host "   El instalador se guardará en tu carpeta 'Descargas'" -ForegroundColor White
     Write-Host ""
     
-    Write-Host "[1/4] Verificando requisitos..." -ForegroundColor Yellow
+    Write-Host "[1/3] Descargando instalador de Forge..." -ForegroundColor Yellow
     
-    # Verificar si Java está instalado
-    try {
-        $javaCheck = java -version 2>&1
-        Write-Host "   ✓ Java encontrado" -ForegroundColor Green
-    } catch {
-        Write-Host "   ✗ Java NO encontrado" -ForegroundColor Red
-        Write-Host "   Para usuarios Premium: Necesitas instalar Java" -ForegroundColor Yellow
-        Write-Host "   Descargar desde: https://www.java.com/es/download/" -ForegroundColor Cyan
-        Write-Host ""
-        pause
-        return
-    }
-    
-    Write-Host "[2/4] Descargando instalador de Forge..." -ForegroundColor Yellow
-    
-    # Descargar desde tu repositorio (más confiable)
+    # Descargar desde tu repositorio (carpeta forge)
     $ForgeURL = "https://raw.githubusercontent.com/$UsuarioGitHub/$NombreRepo/main/forge/forge-installer.jar"
     
     try {
-        Invoke-WebRequest -Uri $ForgeURL -OutFile $RutaForgeLocal -UseBasicParsing -ErrorAction Stop
+        # Verificar si ya existe el archivo en Descargas
+        if (Test-Path $RutaForgeDescarga) {
+            $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+            $RutaForgeDescarga = "$env:USERPROFILE\Downloads\forge-installer_$timestamp.jar"
+            Write-Host "   Archivo existente, se renombrará a: $(Split-Path $RutaForgeDescarga -Leaf)" -ForegroundColor Yellow
+        }
+        
+        Invoke-WebRequest -Uri $ForgeURL -OutFile $RutaForgeDescarga -UseBasicParsing -ErrorAction Stop
         Write-Host "   ✓ Instalador descargado" -ForegroundColor Green
+        Write-Host "   Ubicación: $RutaForgeDescarga" -ForegroundColor Gray
     } catch {
         Write-Host "   ✗ Error al descargar Forge" -ForegroundColor Red
-        Write-Host "   Asegurate de subir 'forge-installer.jar' a la carpeta 'forge/' de tu GitHub" -ForegroundColor Yellow
         Write-Host ""
-        pause
-        return
+        Write-Host "   SOLUCIÓN: Asegurate de subir 'forge-installer.jar'" -ForegroundColor Yellow
+        Write-Host "   a la carpeta 'forge/' de tu GitHub" -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "   Presiona cualquier tecla para salir..." -ForegroundColor Gray
+        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        exit
     }
     
-    Write-Host "[3/4] Ejecutando instalador..." -ForegroundColor Yellow
+    Write-Host "[2/3] Abriendo instalador..." -ForegroundColor Yellow
     Write-Host "   Se abrirá la ventana de instalación de Forge" -ForegroundColor White
     Write-Host "   Sigue estos pasos:" -ForegroundColor White
     Write-Host "   1. Haz clic en 'Install client'" -ForegroundColor Cyan
     Write-Host "   2. Espera a que termine" -ForegroundColor Cyan
     Write-Host "   3. Cierra el instalador cuando finalice" -ForegroundColor Cyan
     Write-Host ""
+    Write-Host "   El instalador se abrirá en 5 segundos..." -ForegroundColor Gray
     
-    # Dar tiempo para leer
-    Start-Sleep -Seconds 3
+    # Contador regresivo
+    for ($i = 5; $i -gt 0; $i--) {
+        Write-Host "   $i..." -ForegroundColor Gray
+        Start-Sleep -Seconds 1
+    }
     
     # Ejecutar el instalador
     try {
-        Start-Process java -ArgumentList "-jar", "`"$RutaForgeLocal`"" -Wait
+        Start-Process -FilePath "java" -ArgumentList "-jar", "`"$RutaForgeDescarga`"" -Wait
         Write-Host "   ✓ Instalación completada" -ForegroundColor Green
     } catch {
-        Write-Host "   ✗ Error al ejecutar el instalador" -ForegroundColor Red
-        Write-Host ""
-        pause
-        return
+        Write-Host "   ✗ No se pudo abrir el instalador automáticamente" -ForegroundColor Red
+        Write-Host "   Abre manualmente el archivo: $RutaForgeDescarga" -ForegroundColor Yellow
     }
     
-    Write-Host "[4/4] Finalizando..." -ForegroundColor Yellow
+    Write-Host "[3/3] Finalizando..." -ForegroundColor Yellow
     Write-Host ""
     Write-Host "=====================================================" -ForegroundColor Green
-    Write-Host "   ¡FORGE INSTALADO CORRECTAMENTE!" -ForegroundColor Green
+    Write-Host "   ¡FORGE DESCARGADO CORRECTAMENTE!" -ForegroundColor Green
     Write-Host "=====================================================" -ForegroundColor Green
-    Write-Host "   Ahora en el launcher de Minecraft:" -ForegroundColor White
-    Write-Host "   1. Crea un nuevo perfil o selecciona 'Forge 1.20.1'" -ForegroundColor Cyan
-    Write-Host "   2. Asegúrate de descargar los mods (Opción 1)" -ForegroundColor Cyan
+    Write-Host "   Instalación manual:" -ForegroundColor White
+    Write-Host "   1. Abre el archivo descargado en tu carpeta 'Descargas'" -ForegroundColor Cyan
+    Write-Host "   2. Haz clic en 'Install client'" -ForegroundColor Cyan
+    Write-Host "   3. Espera y cierra el instalador" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "   Después en el launcher de Minecraft:" -ForegroundColor White
+    Write-Host "   1. Selecciona 'Forge 1.20.1'" -ForegroundColor Cyan
+    Write-Host "   2. Descarga los mods (Opción 1 de este instalador)" -ForegroundColor Cyan
     Write-Host "   3. ¡Conéctate al servidor y a jugar!" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "   IP DEL SERVIDOR: PanqueLovers.aternos.me" -ForegroundColor Green
     Write-Host ""
-    pause
+    Write-Host "   Presiona cualquier tecla para salir..." -ForegroundColor Gray
+    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    exit
 }
 
 # =========================================
-# EJECUCIÓN PRINCIPAL
+# EJECUCIÓN PRINCIPAL (NO REGRESA AL MENÚ)
 # =========================================
 switch ($opcion) {
     "1" { 
-        Descargar-Mods
-        # Volver al menú principal
-        & $MyInvocation.MyCommand.Path
+        Descargar-Mods  # Después de terminar, se cierra
     }
     "2" { 
-        Instalar-Forge
-        # Volver al menú principal
-        & $MyInvocation.MyCommand.Path
+        Descargar-Forge  # Después de terminar, se cierra
     }
     "3" { 
         Write-Host ""
@@ -228,8 +234,8 @@ switch ($opcion) {
         exit
     }
     default {
-        Write-Host "   Opción no válida. Inténtalo de nuevo." -ForegroundColor Red
+        Write-Host "   Opción no válida. El script se cerrará." -ForegroundColor Red
         Start-Sleep -Seconds 2
-        & $MyInvocation.MyCommand.Path
+        exit
     }
 }
