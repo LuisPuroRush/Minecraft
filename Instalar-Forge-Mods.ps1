@@ -1,5 +1,5 @@
 # ====================================================
-# INSTALADOR DE MODS Y FORGE PARA MINECRAFT 1.20.1
+# INSTALADOR COMPLETO DE MINECRAFT 1.20.1
 # Repositorio: https://github.com/LuisPuroRush/Minecraft
 # Creado por :v Panquesito - TikTok: a.panquesito
 # ====================================================
@@ -13,10 +13,12 @@ $Config = @{
 
 # RUTAS DEL SISTEMA
 $Rutas = @{
-    ModsLocal    = "$env:APPDATA\.minecraft\mods"
-    ForgeDescarga = "$env:USERPROFILE\Downloads\forge-installer.jar"
-    CarpetaModsGitHub = "mods"
+    ModsLocal          = "$env:APPDATA\.minecraft\mods"
+    ForgeDescarga      = "$env:USERPROFILE\Downloads\forge-installer.jar"
+    TLauncherDescarga  = "$env:USERPROFILE\Downloads\TLauncher-Installer.exe"
+    CarpetaModsGitHub  = "mods"
     CarpetaForgeGitHub = "forge"
+    CarpetaTLauncherGitHub = "minecraft"
 }
 
 # ====================================================
@@ -27,7 +29,7 @@ function Mostrar-Menu {
     Clear-Host
     Write-Host ""
     Write-Host "=====================================================" -ForegroundColor Cyan
-    Write-Host "    INSTALADOR DE MINECRAFT 1.20.1" -ForegroundColor Cyan
+    Write-Host "    INSTALADOR COMPLETO DE MINECRAFT 1.20.1" -ForegroundColor Cyan
     Write-Host "         $($Config.IP_Servidor)" -ForegroundColor Cyan
     Write-Host "=====================================================" -ForegroundColor Cyan
     Write-Host ""
@@ -39,9 +41,8 @@ function Mostrar-Menu {
     
     # Instrucciones generales
     Write-Host "   INSTRUCCIONES IMPORTANTES:" -ForegroundColor White
-    Write-Host "   • TLauncher: NO instalar Forge aquí" -ForegroundColor Gray
-    Write-Host "     Solo seleccionar 'Forge 1.20.1' en el launcher" -ForegroundColor Gray
-    Write-Host "   • Premium: Deben instalar Forge (Opción 2)" -ForegroundColor Gray
+    Write-Host "   • TLauncher: Para usuarios NO Premium" -ForegroundColor Gray
+    Write-Host "   • Premium: Usar Forge oficial (Opción 2)" -ForegroundColor Gray
     Write-Host ""
     Write-Host "   IP DEL SERVIDOR: $($Config.IP_Servidor)" -ForegroundColor Green
     Write-Host ""
@@ -50,7 +51,9 @@ function Mostrar-Menu {
     Write-Host "   OPCIONES DISPONIBLES:" -ForegroundColor White
     Write-Host "   1. DESCARGAR E INSTALAR MODS" -ForegroundColor Yellow
     Write-Host "   2. DESCARGAR FORGE 1.20.1 (SOLO PREMIUM)" -ForegroundColor Magenta
-    Write-Host "   3. SALIR" -ForegroundColor Yellow
+    Write-Host "   3. INSTALAR TLAUNCHER (NO PREMIUM)" -ForegroundColor Cyan
+    Write-Host "       ⚠  Leer bien al momento de instalar no todo es check" -ForegroundColor Red
+    Write-Host "   4. SALIR" -ForegroundColor Yellow
     Write-Host ""
 }
 
@@ -116,13 +119,11 @@ function Descargar-Mods {
         Write-Progress -Activity "Descargando mods..." -Status "$($Mod.name)" -PercentComplete $Porcentaje -CurrentOperation "Mod $($i+1) de $Total"
         
         try {
-            # Intentar con WebClient primero (más confiable)
             $WebClient = New-Object System.Net.WebClient
             $WebClient.DownloadFile($Mod.download_url, $RutaDestino)
             $Descargados++
             Write-Host "   [$($i+1)/$Total] ✓ $($Mod.name)" -ForegroundColor Green
         } catch {
-            # Fallback a Invoke-WebRequest
             try {
                 Invoke-WebRequest -Uri $Mod.download_url -OutFile $RutaDestino -UseBasicParsing
                 $Descargados++
@@ -234,6 +235,80 @@ function Descargar-Forge {
     return $true
 }
 
+function Instalar-TLauncher {
+    Clear-Host
+    Write-Host ""
+    Write-Host "=====================================================" -ForegroundColor Cyan
+    Write-Host "   INSTALAR TLAUNCHER (NO PREMIUM)" -ForegroundColor Cyan
+    Write-Host "=====================================================" -ForegroundColor Cyan
+    Write-Host ""
+    
+    Write-Host "   ⚠  ¡ATENCIÓN IMPORTANTE!" -ForegroundColor Red
+    Write-Host "   Leer bien al momento de instalar, no todo es check" -ForegroundColor Red
+    Write-Host "   Durante la instalación, DESMARCAR opciones no deseadas" -ForegroundColor Yellow
+    Write-Host ""
+    
+    Write-Host "   [1/3] DESCARGANDO TLAUNCHER..." -ForegroundColor Yellow
+    
+    # URL del TLauncher en GitHub
+    $TLauncherURL = "https://raw.githubusercontent.com/$($Config.UsuarioGitHub)/$($Config.Repositorio)/main/$($Rutas.CarpetaTLauncherGitHub)/TLauncher-Installer-1.9.5.1.exe"
+    
+    try {
+        $WebClient = New-Object System.Net.WebClient
+        $WebClient.DownloadFile($TLauncherURL, $Rutas.TLauncherDescarga)
+        Write-Host "   ✓ TLauncher descargado" -ForegroundColor Green
+        Write-Host "   Ubicación: $($Rutas.TLauncherDescarga)" -ForegroundColor Gray
+    } catch {
+        Write-Host "   ✗ Error al descargar TLauncher" -ForegroundColor Red
+        Write-Host ""
+        Write-Host "   SOLUCIÓN: Verifica que el archivo existe en:" -ForegroundColor Yellow
+        Write-Host "   https://github.com/$($Config.UsuarioGitHub)/$($Config.Repositorio)/tree/main/minecraft" -ForegroundColor Cyan
+        Pausa-Y-Continuar
+        return $false
+    }
+    
+    Write-Host ""
+    Write-Host "   [2/3] EJECUTANDO INSTALADOR..." -ForegroundColor Yellow
+    Write-Host "   Se abrirá en 5 segundos..." -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "   CONSEJOS PARA LA INSTALACIÓN:" -ForegroundColor White
+    Write-Host "   1. Lee cada pantalla cuidadosamente" -ForegroundColor Cyan
+    Write-Host "   2. Desmarca 'Instalar software adicional'" -ForegroundColor Cyan
+    Write-Host "   3. Desmarca 'Cambiar página de inicio'" -ForegroundColor Cyan
+    Write-Host "   4. Elige solo lo necesario" -ForegroundColor Cyan
+    Write-Host ""
+    
+    # Cuenta regresiva
+    for ($i = 5; $i -gt 0; $i--) {
+        Write-Host "   $i..." -ForegroundColor Gray
+        Start-Sleep -Seconds 1
+    }
+    
+    # Ejecutar el instalador
+    try {
+        Start-Process -FilePath $Rutas.TLauncherDescarga
+        Write-Host "   ✓ Instalador ejecutado" -ForegroundColor Green
+    } catch {
+        Write-Host "   ✗ No se pudo abrir automáticamente" -ForegroundColor Red
+        Write-Host "   Abre manualmente: $($Rutas.TLauncherDescarga)" -ForegroundColor Yellow
+    }
+    
+    Write-Host ""
+    Write-Host "   [3/3] INSTRUCCIONES FINALES" -ForegroundColor Yellow
+    Write-Host "   ===========================================" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "   DESPUÉS DE INSTALAR TLAUNCHER:" -ForegroundColor White
+    Write-Host "   1. Abre TLauncher" -ForegroundColor Cyan
+    Write-Host "   2. En 'Versiones', selecciona 'Forge 1.20.1'" -ForegroundColor Cyan
+    Write-Host "   3. Descarga los mods (Opción 1 de este instalador)" -ForegroundColor Cyan
+    Write-Host "   4. ¡Conéctate y juega!" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "   IP: $($Config.IP_Servidor)" -ForegroundColor Green
+    Write-Host ""
+    
+    return $true
+}
+
 # ====================================================
 # PROGRAMA PRINCIPAL
 # ====================================================
@@ -250,7 +325,7 @@ if ($Host.Name -notmatch "ConsoleHost") {
 # Bucle principal del menú
 do {
     Mostrar-Menu
-    $opcion = Read-Host "   Selecciona una opción (1-3)"
+    $opcion = Read-Host "   Selecciona una opción (1-4)"
     
     switch ($opcion) {
         "1" {
@@ -266,6 +341,12 @@ do {
             }
         }
         "3" {
+            $resultado = Instalar-TLauncher
+            if ($resultado) {
+                Pausa-Y-Continuar
+            }
+        }
+        "4" {
             Clear-Host
             Write-Host ""
             Write-Host "=====================================================" -ForegroundColor Cyan
